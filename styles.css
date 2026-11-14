@@ -514,3 +514,15 @@ textarea.note::placeholder{color:var(--label3)}
 .field input[type=time]{min-width:84px}
 .field input.tog{flex:none;width:51px;height:31px;min-width:51px}
 .field input[type=time]{min-width:96px}
+
+/* ---------- Mascotte ---------- */
+.masc{display:block;-webkit-user-drag:none;filter:drop-shadow(0 10px 14px rgba(0,0,0,.14))}
+.w-masc{width:min(46vw,190px);margin:0 auto;animation:pop .7s cubic-bezier(.2,1.25,.4,1) both,bob 3.4s 1s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-7px)}}
+.mbub{display:flex;align-items:flex-end;gap:8px;margin:0 0 14px}
+.mbub .masc{width:66px;flex:none;margin-bottom:-2px;animation:bob 3.4s ease-in-out infinite}
+.mbub .bub{position:relative;flex:1;min-width:0;background:var(--bg2);border-radius:20px 20px 20px 6px;padding:12px 14px;font-size:15px;line-height:1.36;letter-spacing:-.24px;animation:rise .5s .1s var(--spring) both}
+.mbub .bub b{display:block;font-weight:600}
+.mbub .bub button{display:inline-flex;align-items:center;gap:4px;margin-top:6px;color:var(--tint);font-size:15px;font-weight:600}
+.empty .masc{width:132px;margin:0 auto 14px;animation:bob 3.4s ease-in-out infinite}
+.ready .masc{width:92px;margin:4px auto 8px}

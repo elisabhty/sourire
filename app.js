@@ -169,7 +169,7 @@ const initial = p => (p?.name || '?').trim().charAt(0).toUpperCase();
 const opts = (list, sel) => list.map(([v, l]) => `<option value="${v}"${String(v) === String(sel) ? ' selected' : ''}>${esc(l)}</option>`).join('');
 const hm = ms => { const d = new Date(ms); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 const hmFr = ms => hm(ms).replace(':', ' h ');
-const dur = ms => { const m = Math.max(0, Math.round(ms / 6e4)), h = Math.floor(m / 60); return h ? `${h} h ${pad(m % 60)}` : `${m} min`; };
+const dur = ms => { const m = Math.max(0, Math.round(ms / 6e4)), h = Math.floor(m / 60); return h ? (m % 60 ? `${h} h ${pad(m % 60)}` : `${h} h`) : `${m} min`; };
 const hours1 = ms => (ms / HOUR).toFixed(1).replace('.', ',').replace(',0', '');
 const num = v => Number(String(v ?? '').replace(',', '.')) || 0;
 const telHref = s => 'tel:' + String(s || '').replace(/[^\d+]/g, '');
@@ -1156,6 +1156,44 @@ function familyCard() {
 const guideStrip = p => `<div class="sh"><h2>Fiches pratiques</h2><button data-tab="guide">Tout voir</button></div>
   <div class="gcards">${GUIDE.filter(g => relevant(g, p)).slice(0, 6).map(g => `<button class="gcard" data-art="${g.id}" style="background:linear-gradient(150deg,${g.c},color-mix(in srgb,${g.c} 70%,#000))"><span class="gi">${ic(g.ic, 18)}</span><b>${esc(g.t)}</b></button>`).join('')}</div>`;
 
+// ---------- La mascotte : un message utile selon la situation, sinon un conseil du jour ----------
+const TIPS = [
+  { t: 'Garde un petit kit sur toi : brosse à dents, cire et boîtier.', for: 'all' },
+  { t: 'Prends tes photos au même endroit, avec la même lumière : la comparaison sera bien plus parlante.', for: 'all' },
+  { t: 'Une question te vient ? Note-la tout de suite pour ne pas l’oublier au rendez-vous.', for: 'all', a: 'add-question', l: 'Ajouter une question' },
+  { t: 'Une gêne après un réglage est fréquente : aliments mous et cire aident souvent.', for: 'all', art: 'douleur' },
+  { t: 'Les rappels ajoutés au Calendrier sonnent même quand l’appli est fermée.', for: 'all', a: 'calendar', l: 'Créer mes rappels' },
+  { t: 'Brosse au-dessus et en dessous de chaque bracket, en inclinant la brosse.', for: ['bagues', 'lingual'], art: 'hyg-bagues' },
+  { t: 'Coupe les aliments durs en petits morceaux plutôt que de croquer dedans.', for: ['bagues', 'lingual'], art: 'manger' },
+  { t: 'Quand tu portes tes aligneurs, ne bois que de l’eau.', for: ['aligneurs'], art: 'aligneurs' },
+  { t: 'Évite l’eau chaude pour nettoyer tes gouttières : elle peut les déformer.', for: ['aligneurs', 'contention'], art: 'hyg-aligneurs' },
+  { t: 'Brosse-toi les dents avant de remettre tes aligneurs.', for: ['aligneurs'], art: 'hyg-aligneurs' },
+  { t: 'La contention, c’est ce qui garde ton beau résultat. Elle se porte souvent sur le long terme.', for: ['contention'], art: 'contention' },
+];
+function mascotSays(p) {
+  const o = openWear(), al = aligner(p), pr = progress(p), photos = myPhotos(), last = photos.at(-1);
+  if (o && Date.now() - o.out > 2 * HOUR) return { t: `Tes aligneurs sont hors de la bouche depuis ${dur(Date.now() - o.out)}. On les remet ?`, a: 'wear', l: 'Je les remets' };
+  if (al?.changedToday && last?.date !== iso()) return { b: `Nouvel aligneur n° ${al.n} !`, t: 'Une photo aujourd’hui pour garder la trace de chaque étape ?', a: 'camera', l: 'Prendre la photo' };
+  if (pr?.milestone && pr.milestone < 100) return { b: pr.milestone === 50 ? 'Mi-parcours franchi !' : `Cap des ${pr.milestone} % franchi !`, t: 'Regarde le chemin parcouru depuis ta première photo.', a: 'see-progress', l: 'Voir l’avant / après' };
+  const r = mine('rdv').filter(x => !x.done && x.date >= iso() && daysBetween(iso(), x.date) <= 1).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
+  if (r) return { b: `Rendez-vous ${rel(r.date)}${r.time ? ` à ${r.time.replace(':', ' h ')}` : ''}.`, t: 'Tes questions sont prêtes ? Le mode présentation est dans l’onglet Cabinet.', a: 'go-suivi', l: 'Voir mes questions' };
+  const left = elasticsLeft(p);
+  if (left !== null && left < 7) return { t: `Plus que ${plural(left, 'jour')} d’élastiques. Pense à en redemander à ton cabinet.`, a: 'stock', l: 'Mettre à jour le stock' };
+  if (!photos.length) return { b: 'Salut, moi c’est ta mascotte !', t: 'Commence par une photo de départ : c’est elle qui montrera tout le chemin parcouru.', a: 'camera', l: 'Prendre ma première photo' };
+  const since = daysBetween(last.date, iso());
+  if (since >= 14) return { t: `Ça fait ${since} jours sans photo. On en refait une, au même endroit que la dernière ?`, a: 'camera', l: 'Prendre une photo' };
+  const items = routine(p), today = dayGet(iso(), p.id);
+  if (items.length && items.every(([k]) => today[k])) return { b: 'Routine du jour bouclée !', t: 'Tes dents te disent merci.' };
+  const tips = TIPS.filter(x => x.for === 'all' || x.for.includes(p.type));
+  const tip = tips[Math.floor(Date.now() / DAY) % tips.length];
+  return { b: 'Conseil du jour', t: tip.t, a: tip.a || (tip.art ? `art:${tip.art}` : null), l: tip.l || (tip.art ? 'Lire la fiche' : null) };
+}
+function mascotBubble(p) {
+  const m = mascotSays(p);
+  const btn = m.a ? (m.a.startsWith('art:') ? `<button data-art="${m.a.slice(4)}">${esc(m.l)}${ic('chevR', 14)}</button>` : `<button data-action="${m.a}">${esc(m.l)}${ic('chevR', 14)}</button>`) : '';
+  return `<div class="mbub"><img class="masc" src="mascot.webp" alt=""><div class="bub">${m.b ? `<b>${esc(m.b)}</b>` : ''}${esc(m.t)}${btn ? `<br>${btn}` : ''}</div></div>`;
+}
+
 // ---------- Écrans ----------
 function vWelcome() {
   const feats = [
@@ -1164,7 +1202,7 @@ function vWelcome() {
     ['alert', 'J’ai un problème', 'Les bons gestes en attendant, et ton cabinet à appeler ou à prévenir en un tap, même hors connexion.'],
     ['lock', 'Privé', 'Tout reste sur ton iPhone. Pas de compte, pas de serveur, plusieurs profils pour la famille.'],
   ];
-  return `<div class="welcome"><div class="w-top"><img class="w-icon" src="icon-512.png" alt=""><h1>Bienvenue dans<br><span>Sourire</span></h1></div>
+  return `<div class="welcome"><div class="w-top"><img class="masc w-masc" src="mascot.webp" alt="La mascotte de Sourire, une dent souriante avec des bagues"><h1>Bienvenue dans<br><span>Sourire</span></h1></div>
     <div class="w-list">${feats.map(([i, t, d]) => `<div class="w-f"><span class="w-ic">${ic(i, 30)}</span><div><b>${t}</b><p>${d}</p></div></div>`).join('')}</div>
     <div class="w-cta"><button class="btn" data-action="new-profile">Continuer</button><button class="lnk" data-action="import">Restaurer une sauvegarde</button></div></div>`;
 }
@@ -1197,6 +1235,7 @@ function vHome() {
   }
   const photoSub = since === null ? 'Ta photo de départ' : since === 0 ? 'Déjà faite aujourd’hui' : `Dernière il y a ${plural(since, 'jour')}`;
   return `<div class="lt"><div class="eyebrow">${esc(today)}</div><h1>Bonjour ${esc(p.name)}</h1></div>
+    ${mascotBubble(p)}
     <div class="stack">
       ${isAlign(p) ? wearCard() : ''}${hasNights(p) ? nightsCard(p) : ''}
       ${pctx ? painCard(pctx) : ''}
@@ -1218,7 +1257,7 @@ function vHome() {
 }
 function vGallery() {
   const all = myPhotos();
-  if (!all.length) return `<div class="empty"><div class="eic">${ic('camera', 40)}</div><h2>Aucune photo</h2>
+  if (!all.length) return `<div class="empty"><img class="masc" src="mascot-34.webp" alt=""><h2>Aucune photo</h2>
     <p>Prends une première photo de départ : de face, de côté ou des arcades. C’est elle qui rendra l’évolution visible.</p>
     <button class="btn" data-action="camera">${ic('camera', 20)}Appareil photo guidé</button><button class="btn soft" data-action="library">Choisir dans Photos</button></div>`;
   if (ui.filter !== 'all' && !all.some(p => p.view === ui.filter)) ui.filter = 'all';
@@ -1233,7 +1272,7 @@ function vGallery() {
 function vCompare() {
   const all = myPhotos();
   const byView = VIEWS.map(([v, l]) => [v, l, all.filter(p => p.view === v)]).filter(x => x[2].length >= 2);
-  if (!byView.length) return `<div class="empty"><div class="eic">${ic('compare', 40)}</div><h2>Deux photos minimum</h2>
+  if (!byView.length) return `<div class="empty"><img class="masc" src="mascot-34.webp" alt=""><h2>Deux photos minimum</h2>
     <p>Ajoute au moins deux photos de la même vue, à des dates différentes, pour voir l’avant / après.</p><button class="btn" data-action="camera">${ic('camera', 20)}Prendre une photo</button></div>`;
   if (!byView.some(x => x[0] === ui.cmpView)) { ui.cmpView = byView[0][0]; ui.cmpA = ui.cmpB = null; }
   const list = byView.find(x => x[0] === ui.cmpView)[2];
@@ -1583,6 +1622,7 @@ const ACTIONS = {
   'add-rdv': () => rdvSheet(), 'add-question': () => questionSheet(), 'add-pay': () => paySheet(),
   'wear': toggleWear, 'wear-list': wearListSheet, 'aligner': alignerSheet, 'stock': stockSheet, 'rb': rbSheet,
   'problem': problemSheet, 'calendar': calendarSheet,
+  'see-progress': () => { ui.pmode = 'compare'; ui.cmpA = ui.cmpB = null; go('photos'); }, 'go-suivi': () => go('suivi'),
   'message': () => { const p = me(), last = myPhotos().at(-1); const series = last ? myPhotos().filter(x => x.date === last.date) : []; composeMessage({ text: `${clinicSummary(p)}\n\n${mine('questions').filter(q => !q.done).map(q => `- ${q.text}`).join('\n')}\n`, photos: series.slice(0, 6), subject: `Suivi de ${p.name}` }); },
   'pdf': () => makeReport().catch(e => { console.error(e); hud('Impossible de créer le PDF', 'info'); }),
   'share-all': () => sharePhotos(myPhotos()), 'export': exportSheet, 'import': importBackup,

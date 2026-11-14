@@ -1,6 +1,6 @@
 // Réseau d'abord (pour toujours avoir la dernière version), cache en secours hors ligne.
-const CACHE = 'sourire-v3';
-const SHELL = ['./', 'index.html', 'styles.css?v=3', 'app.js?v=3', 'icon-512.png', 'icon.svg', 'manifest.webmanifest'];
+const CACHE = 'sourire-v4';
+const SHELL = ['./', 'index.html', 'styles.css?v=4', 'app.js?v=4', 'icon-512.png', 'mascot.webp', 'mascot-34.webp', 'manifest.webmanifest'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
