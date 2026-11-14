@@ -430,7 +430,7 @@ function download(files) {
 }
 // Après une préparation longue, on redemande un tap : iOS n'ouvre le partage que dans un geste.
 function readyToShare(files, title, sub, { icon = 'doc', primary = 'Partager', onPrimary, secondary } = {}) {
-  const L = openLayer(`<div class="sheet"><div class="grab"></div><div class="ready"><div class="ready-ic">${ic(icon, 32)}</div>
+  const L = openLayer(`<div class="sheet"><div class="grab"></div><div class="ready">${masc('party')}
     <h3>${esc(title)}</h3><p>${esc(sub)}</p><button class="btn" data-s>${ic(icon === 'calplus' ? 'calplus' : 'share', 20)}${esc(primary)}</button>
     ${secondary ? `<button class="btn soft" data-2>${esc(secondary)}</button>` : ''}<button class="btn soft" data-c>Fermer</button></div></div>`);
   $('[data-s]', L.el).onclick = () => (onPrimary ? onPrimary() : shareFiles(files, title));
@@ -603,7 +603,7 @@ function problemSheet() {
   const list = PROBLEMS.filter(x => !(x.id === 'aligneur' || x.id === 'serre') || isAlign(p)).filter(x => !['bracket', 'fil'].includes(x.id) || ['bagues', 'lingual', 'autre'].includes(p.type) || !p.type);
   const f = sheet({
     title: 'J’ai un problème',
-    body: `<div class="box urg" style="margin-top:0">${ic('alert', 20)}<span>${esc(URGENT)}</span></div>
+    body: `${masc('worried', 'hdr')}<div class="box urg" style="margin-top:0">${ic('alert', 20)}<span>${esc(URGENT)}</span></div>
       <div class="sl">Que se passe-t-il ?</div>
       <div class="group">${list.map(x => `<button type="button" class="row" data-pb="${x.id}"><span class="tx"><span class="t">${esc(x.t)}</span></span>${CHEV}</button>`).join('')}
         <button type="button" class="row" data-pb="autre"><span class="tx"><span class="t">Autre chose</span></span>${CHEV}</button></div>
@@ -632,7 +632,8 @@ function articleSheet(id) {
   const a = GUIDE.find(g => g.id === id); if (!a) return;
   const html = a.body.map(([k, v]) => k === 'p' ? `<p>${esc(v)}</p>` : k === 'h' ? `<h4>${esc(v)}</h4>` : k === 'ul' ? `<ul>${v.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '').join('');
   const boxes = a.body.filter(([k]) => k === 'call' || k === 'tip').map(([k, v]) => `<div class="box ${k}">${ic(k === 'call' ? 'phone' : 'info', 20)}<span>${esc(v)}</span></div>`).join('');
-  sheet({ title: a.t, body: `<div class="art">${html}</div>${boxes}<p class="src">Information générale, relue pour rester prudente. Elle ne remplace pas l’avis de ton orthodontiste : en cas de doute, appelle ton cabinet.</p>` });
+  const pose = { demarrer: 'hello', douleur: 'worried', aligneurs: 'timer', contention: 'sleep', 'hyg-bagues': 'front', 'hyg-aligneurs': 'front', remboursement: 'party' }[id];
+  sheet({ title: a.t, body: `${pose ? masc(pose, 'hdr') : ''}<div class="art">${html}</div>${boxes}<p class="src">Information générale, relue pour rester prudente. Elle ne remplace pas l’avis de ton orthodontiste : en cas de doute, appelle ton cabinet.</p>` });
 }
 const relevant = (g, p) => g.for === 'all' || g.for.includes(p.type);
 
@@ -1118,7 +1119,7 @@ function wearCard() {
   const p = me(), o = openWear(), budget = (24 - goalH(p)) * HOUR, out = outMs(p.id, iso()), left = budget - out;
   const pct = Math.min(100, out / Math.max(budget, 1) * 100);
   const long = o && Date.now() - o.out > 4 * HOUR;
-  return `<div class="wear ${o ? 'out' : ''}" id="wearCard"><div class="st"><span class="dot"></span>${o ? 'Aligneurs hors bouche' : 'Aligneurs en bouche'}</div>
+  return `<div class="wear ${o ? 'out' : ''}" id="wearCard">${masc('timer', 'wearm')}<div class="st"><span class="dot"></span>${o ? 'Aligneurs hors bouche' : 'Aligneurs en bouche'}</div>
     <div class="clock">${o ? dur(Date.now() - o.out).replace(/ (min|h)/g, '<small>$1</small>') : `${dur(out).replace(/ (min|h)/g, '<small>$1</small>')}`}</div>
     <div class="meta">${o ? `Retirés à ${hmFr(o.out)} · ${dur(out)} hors bouche aujourd’hui` : 'hors bouche aujourd’hui'}</div>
     <div class="wbar"><i class="${left < 0 ? 'over' : ''}" style="width:${pct}%"></i></div>
@@ -1129,7 +1130,7 @@ function wearCard() {
 function nightsCard(p) {
   const cells = Array.from({ length: 7 }, (_, i) => addDays(iso(), i - 6));
   return `<div class="card"><div class="cardh"><div><div class="eyebrow">Contention · ${esc((RET_NIGHTS.find(x => x[0] === String(p.retNights || 7)) || RET_NIGHTS[0])[1].toLowerCase())}</div>
-      <h3>${nightsDone(p)} nuit${nightsDone(p) > 1 ? 's' : ''} sur les 7 dernières</h3></div></div>
+      <h3>${nightsDone(p)} nuit${nightsDone(p) > 1 ? 's' : ''} sur les 7 dernières</h3></div>${masc('sleep', 'cardm')}</div>
     <div class="nights">${cells.map(d => `<button data-night="${d}" class="${dayGet(d, p.id).night ? 'on' : ''}" aria-label="Nuit du ${fmt(d)}"><i>${ic('check')}</i>${d === iso() ? 'ce soir' : cap(wd(d))}</button>`).join('')}</div></div>`;
 }
 function routineCard(p) {
@@ -1156,6 +1157,8 @@ function familyCard() {
 const guideStrip = p => `<div class="sh"><h2>Fiches pratiques</h2><button data-tab="guide">Tout voir</button></div>
   <div class="gcards">${GUIDE.filter(g => relevant(g, p)).slice(0, 6).map(g => `<button class="gcard" data-art="${g.id}" style="background:linear-gradient(150deg,${g.c},color-mix(in srgb,${g.c} 70%,#000))"><span class="gi">${ic(g.ic, 18)}</span><b>${esc(g.t)}</b></button>`).join('')}</div>`;
 
+const MASC = { front: 'mascot.webp', side: 'mascot-34.webp', hello: 'mascot-hello.webp', selfie: 'mascot-selfie.webp', timer: 'mascot-timer.webp', worried: 'mascot-worried.webp', sleep: 'mascot-sleep.webp', party: 'mascot-party.webp' };
+const masc = (k, cls = '', alt = '') => `<img class="masc ${cls}" src="${MASC[k] || MASC.front}" alt="${esc(alt)}" draggable="false">`;
 // ---------- La mascotte : un message utile selon la situation, sinon un conseil du jour ----------
 const TIPS = [
   { t: 'Garde un petit kit sur toi : brosse à dents, cire et boîtier.', for: 'all' },
@@ -1172,26 +1175,27 @@ const TIPS = [
 ];
 function mascotSays(p) {
   const o = openWear(), al = aligner(p), pr = progress(p), photos = myPhotos(), last = photos.at(-1);
-  if (o && Date.now() - o.out > 2 * HOUR) return { t: `Tes aligneurs sont hors de la bouche depuis ${dur(Date.now() - o.out)}. On les remet ?`, a: 'wear', l: 'Je les remets' };
-  if (al?.changedToday && last?.date !== iso()) return { b: `Nouvel aligneur n° ${al.n} !`, t: 'Une photo aujourd’hui pour garder la trace de chaque étape ?', a: 'camera', l: 'Prendre la photo' };
-  if (pr?.milestone && pr.milestone < 100) return { b: pr.milestone === 50 ? 'Mi-parcours franchi !' : `Cap des ${pr.milestone} % franchi !`, t: 'Regarde le chemin parcouru depuis ta première photo.', a: 'see-progress', l: 'Voir l’avant / après' };
+  if (o && Date.now() - o.out > 2 * HOUR) return { m: 'timer', t: `Tes aligneurs sont hors de la bouche depuis ${dur(Date.now() - o.out)}. On les remet ?`, a: 'wear', l: 'Je les remets' };
+  if (al?.changedToday && last?.date !== iso()) return { m: 'selfie', b: `Nouvel aligneur n° ${al.n} !`, t: 'Une photo aujourd’hui pour garder la trace de chaque étape ?', a: 'camera', l: 'Prendre la photo' };
+  if (pr?.milestone && pr.milestone < 100) return { m: 'party', b: pr.milestone === 50 ? 'Mi-parcours franchi !' : `Cap des ${pr.milestone} % franchi !`, t: 'Regarde le chemin parcouru depuis ta première photo.', a: 'see-progress', l: 'Voir l’avant / après' };
   const r = mine('rdv').filter(x => !x.done && x.date >= iso() && daysBetween(iso(), x.date) <= 1).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
-  if (r) return { b: `Rendez-vous ${rel(r.date)}${r.time ? ` à ${r.time.replace(':', ' h ')}` : ''}.`, t: 'Tes questions sont prêtes ? Le mode présentation est dans l’onglet Cabinet.', a: 'go-suivi', l: 'Voir mes questions' };
+  if (r) return { m: 'hello', b: `Rendez-vous ${rel(r.date)}${r.time ? ` à ${r.time.replace(':', ' h ')}` : ''}.`, t: 'Tes questions sont prêtes ? Le mode présentation est dans l’onglet Cabinet.', a: 'go-suivi', l: 'Voir mes questions' };
   const left = elasticsLeft(p);
-  if (left !== null && left < 7) return { t: `Plus que ${plural(left, 'jour')} d’élastiques. Pense à en redemander à ton cabinet.`, a: 'stock', l: 'Mettre à jour le stock' };
-  if (!photos.length) return { b: 'Salut, moi c’est ta mascotte !', t: 'Commence par une photo de départ : c’est elle qui montrera tout le chemin parcouru.', a: 'camera', l: 'Prendre ma première photo' };
+  if (left !== null && left < 7) return { m: 'worried', t: `Plus que ${plural(left, 'jour')} d’élastiques. Pense à en redemander à ton cabinet.`, a: 'stock', l: 'Mettre à jour le stock' };
+  if (!photos.length) return { m: 'hello', b: 'Salut, moi c’est ta mascotte !', t: 'Commence par une photo de départ : c’est elle qui montrera tout le chemin parcouru.', a: 'camera', l: 'Prendre ma première photo' };
   const since = daysBetween(last.date, iso());
-  if (since >= 14) return { t: `Ça fait ${since} jours sans photo. On en refait une, au même endroit que la dernière ?`, a: 'camera', l: 'Prendre une photo' };
+  if (since >= 14) return { m: 'selfie', t: `Ça fait ${since} jours sans photo. On en refait une, au même endroit que la dernière ?`, a: 'camera', l: 'Prendre une photo' };
+  if (hasNights(p) && !dayGet(addDays(iso(), -1), p.id).night && new Date().getHours() < 15) return { m: 'sleep', b: 'Et cette nuit ?', t: 'Si tu as porté ta contention, coche la nuit d’hier juste en dessous.' };
   const items = routine(p), today = dayGet(iso(), p.id);
-  if (items.length && items.every(([k]) => today[k])) return { b: 'Routine du jour bouclée !', t: 'Tes dents te disent merci.' };
+  if (items.length && items.every(([k]) => today[k])) return { m: 'party', b: 'Routine du jour bouclée !', t: 'Tes dents te disent merci.' };
   const tips = TIPS.filter(x => x.for === 'all' || x.for.includes(p.type));
   const tip = tips[Math.floor(Date.now() / DAY) % tips.length];
-  return { b: 'Conseil du jour', t: tip.t, a: tip.a || (tip.art ? `art:${tip.art}` : null), l: tip.l || (tip.art ? 'Lire la fiche' : null) };
+  return { m: isRet(p) ? 'sleep' : 'front', b: 'Conseil du jour', t: tip.t, a: tip.a || (tip.art ? `art:${tip.art}` : null), l: tip.l || (tip.art ? 'Lire la fiche' : null) };
 }
 function mascotBubble(p) {
   const m = mascotSays(p);
   const btn = m.a ? (m.a.startsWith('art:') ? `<button data-art="${m.a.slice(4)}">${esc(m.l)}${ic('chevR', 14)}</button>` : `<button data-action="${m.a}">${esc(m.l)}${ic('chevR', 14)}</button>`) : '';
-  return `<div class="mbub"><img class="masc" src="mascot.webp" alt=""><div class="bub">${m.b ? `<b>${esc(m.b)}</b>` : ''}${esc(m.t)}${btn ? `<br>${btn}` : ''}</div></div>`;
+  return `<div class="mbub">${masc(m.m)}<div class="bub">${m.b ? `<b>${esc(m.b)}</b>` : ''}${esc(m.t)}${btn ? `<br>${btn}` : ''}</div></div>`;
 }
 
 // ---------- Écrans ----------
@@ -1202,7 +1206,7 @@ function vWelcome() {
     ['alert', 'J’ai un problème', 'Les bons gestes en attendant, et ton cabinet à appeler ou à prévenir en un tap, même hors connexion.'],
     ['lock', 'Privé', 'Tout reste sur ton iPhone. Pas de compte, pas de serveur, plusieurs profils pour la famille.'],
   ];
-  return `<div class="welcome"><div class="w-top"><img class="masc w-masc" src="mascot.webp" alt="La mascotte de Sourire, une dent souriante avec des bagues"><h1>Bienvenue dans<br><span>Sourire</span></h1></div>
+  return `<div class="welcome"><div class="w-top">${masc('hello', 'w-masc', 'La mascotte de Sourire, une dent souriante avec des bagues, qui fait coucou')}<h1>Bienvenue dans<br><span>Sourire</span></h1></div>
     <div class="w-list">${feats.map(([i, t, d]) => `<div class="w-f"><span class="w-ic">${ic(i, 30)}</span><div><b>${t}</b><p>${d}</p></div></div>`).join('')}</div>
     <div class="w-cta"><button class="btn" data-action="new-profile">Continuer</button><button class="lnk" data-action="import">Restaurer une sauvegarde</button></div></div>`;
 }
@@ -1257,7 +1261,7 @@ function vHome() {
 }
 function vGallery() {
   const all = myPhotos();
-  if (!all.length) return `<div class="empty"><img class="masc" src="mascot-34.webp" alt=""><h2>Aucune photo</h2>
+  if (!all.length) return `<div class="empty">${masc('selfie')}<h2>Aucune photo</h2>
     <p>Prends une première photo de départ : de face, de côté ou des arcades. C’est elle qui rendra l’évolution visible.</p>
     <button class="btn" data-action="camera">${ic('camera', 20)}Appareil photo guidé</button><button class="btn soft" data-action="library">Choisir dans Photos</button></div>`;
   if (ui.filter !== 'all' && !all.some(p => p.view === ui.filter)) ui.filter = 'all';
@@ -1272,7 +1276,7 @@ function vGallery() {
 function vCompare() {
   const all = myPhotos();
   const byView = VIEWS.map(([v, l]) => [v, l, all.filter(p => p.view === v)]).filter(x => x[2].length >= 2);
-  if (!byView.length) return `<div class="empty"><img class="masc" src="mascot-34.webp" alt=""><h2>Deux photos minimum</h2>
+  if (!byView.length) return `<div class="empty">${masc('side')}<h2>Deux photos minimum</h2>
     <p>Ajoute au moins deux photos de la même vue, à des dates différentes, pour voir l’avant / après.</p><button class="btn" data-action="camera">${ic('camera', 20)}Prendre une photo</button></div>`;
   if (!byView.some(x => x[0] === ui.cmpView)) { ui.cmpView = byView[0][0]; ui.cmpA = ui.cmpB = null; }
   const list = byView.find(x => x[0] === ui.cmpView)[2];
@@ -1380,7 +1384,7 @@ function vGuide() {
   const p = me(), mineG = GUIDE.filter(g => relevant(g, p)), others = GUIDE.filter(g => !relevant(g, p));
   const row = g => `<button class="row ic" data-art="${g.id}"><span class="tile" style="background:${g.c}">${ic(g.ic, 18)}</span><span class="tx"><span class="t">${esc(g.t)}</span></span>${CHEV}</button>`;
   return `<div class="lt"><h1>Guide</h1><p>Conseils généraux. Ton orthodontiste reste ta référence.</p></div>
-    <button class="sos" data-action="problem"><span class="tile">${ic('alert', 20)}</span><span><b>J’ai un problème</b><small>Bracket, fil, aligneur perdu, contention, douleur…</small></span>${CHEV}</button>
+    <button class="sos" data-action="problem">${masc('worried', 'sosm')}<span><b>J’ai un problème</b><small>Bracket, fil, aligneur perdu, contention, douleur…</small></span>${CHEV}</button>
     <div class="sh"><h2>Pour toi</h2></div><div class="group">${mineG.map(row).join('')}</div>
     ${others.length ? `<div class="sh"><h2>Autres fiches</h2></div><div class="group">${others.map(row).join('')}</div>` : ''}
     <p class="foot">Sources : American Association of Orthodontists, recommandations SFODF (2023), Assurance Maladie, littérature scientifique. Ces fiches donnent des repères généraux et ne remplacent pas un avis médical.</p>`;

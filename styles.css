@@ -526,3 +526,10 @@ textarea.note::placeholder{color:var(--label3)}
 .mbub .bub button{display:inline-flex;align-items:center;gap:4px;margin-top:6px;color:var(--tint);font-size:15px;font-weight:600}
 .empty .masc{width:132px;margin:0 auto 14px;animation:bob 3.4s ease-in-out infinite}
 .ready .masc{width:92px;margin:4px auto 8px}
+
+.masc.hdr{width:118px;margin:-4px auto 12px}
+.sosm{width:46px;flex:none;filter:none;margin:-6px 0}
+.cardm{width:58px;margin:-10px -4px -12px 0;flex:none}
+.wear{position:relative}
+.wearm{position:absolute;top:-18px;right:6px;width:84px;pointer-events:none}
+.wear .st,.wear .clock,.wear .meta:first-of-type{padding-right:76px}
